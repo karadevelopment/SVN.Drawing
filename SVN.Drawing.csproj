@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="Casting\Extensions.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Helpers\ImageData.cs" />
     <Compile Include="Imaging\Extensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -53,6 +54,10 @@
     <ProjectReference Include="..\SVN.Debug\SVN.Debug.csproj">
       <Project>{4977ffe4-f923-4204-b081-17377ff5811e}</Project>
       <Name>SVN.Debug</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SVN.Math\SVN.Math.csproj">
+      <Project>{00d32e34-d99c-489f-a8db-6b96a5f05035}</Project>
+      <Name>SVN.Math</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
