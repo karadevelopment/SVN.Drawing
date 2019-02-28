@@ -13,7 +13,7 @@ namespace SVN.Drawing.Helpers
     {
         public int Width { get; private set; }
         public int Height { get; private set; }
-        private List<Color> Pixels { get; } = new List<Color>();
+        private List<Color> Colors { get; } = new List<Color>();
 
         private Bitmap Bitmap
         {
@@ -22,11 +22,11 @@ namespace SVN.Drawing.Helpers
                 var result = new Bitmap(this.Width, this.Height);
 
                 var i = default(int);
-                foreach (var pixel in this.Pixels)
+                foreach (var color in this.Colors)
                 {
                     var x = i % this.Width;
                     var y = ((double)i / this.Width).FloorToInt();
-                    result.SetPixel(x, y, pixel);
+                    result.SetPixel(x, y, color);
                     i++;
                 }
 
@@ -68,24 +68,24 @@ namespace SVN.Drawing.Helpers
             }
         }
 
-        private void Apply(Bitmap bitmap)
-        {
-            this.Width = bitmap.Width;
-            this.Height = bitmap.Height;
-            this.SetPixels(bitmap);
-        }
-
         private void SetPixels(Bitmap bitmap)
         {
-            this.Pixels.Clear();
+            this.Colors.Clear();
 
             for (var y = 1; y <= bitmap.Height; y++)
             {
                 for (var x = 1; x <= bitmap.Width; x++)
                 {
-                    this.Pixels.Add(bitmap.GetPixel(x - 1, y - 1));
+                    this.Colors.Add(bitmap.GetPixel(x - 1, y - 1));
                 }
             }
+        }
+
+        private void Apply(Bitmap bitmap)
+        {
+            this.Width = bitmap.Width;
+            this.Height = bitmap.Height;
+            this.SetPixels(bitmap);
         }
 
         public void ApplyConvolutionFilter(double factor = 1, int bias = 0, bool grayscale = true)
@@ -105,15 +105,15 @@ namespace SVN.Drawing.Helpers
             Marshal.Copy(sourceData.Scan0, pixelBuffer, default(int), pixelBuffer.Length);
             sourceBitmap.UnlockBits(sourceData);
 
-            if (grayscale == true)
+            if (grayscale)
             {
-                for (int i = 1; i <= pixelBuffer.Length; i += 4)
+                for (var i = 1; i <= pixelBuffer.Length; i += 4)
                 {
                     var rgb = default(double);
 
                     rgb += pixelBuffer[i - 1] * 0.11f;
                     rgb += pixelBuffer[i + 0] * 0.59f;
-                    rgb += pixelBuffer[i + 1] * 0.3f;
+                    rgb += pixelBuffer[i + 1] * 0.30f;
 
                     pixelBuffer[i - 1] = (byte)rgb;
                     pixelBuffer[i + 0] = pixelBuffer[i - 1];
@@ -129,7 +129,7 @@ namespace SVN.Drawing.Helpers
             var filterHeight = filterMatrix.GetLength(0);
             var filterOffset = (filterWidth - 1) / 2;
             var calcOffset = default(int);
-            int byteOffset = default(int);
+            var byteOffset = default(int);
 
             for (var offsetY = filterOffset; offsetY < sourceBitmap.Height - filterOffset; offsetY++)
             {
@@ -171,7 +171,8 @@ namespace SVN.Drawing.Helpers
             }
 
             var resultBitmap = new Bitmap(sourceBitmap.Width, sourceBitmap.Height);
-            var resultData = resultBitmap.LockBits(new Rectangle(default(int), default(int), resultBitmap.Width, resultBitmap.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            rect = new Rectangle(default(int), default(int), resultBitmap.Width, resultBitmap.Height);
+            var resultData = resultBitmap.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
             Marshal.Copy(resultBuffer, default(int), resultData.Scan0, resultBuffer.Length);
             resultBitmap.UnlockBits(resultData);
@@ -179,9 +180,48 @@ namespace SVN.Drawing.Helpers
             this.Apply(resultBitmap);
         }
 
-        internal double[] GetArray()
+        private double GetNoise(Bitmap bitmap, int widthIndex, int heightIndex, int width, int height)
         {
-            return this.Pixels.Select(x => x.Sigmoid()).ToArray();
+            var result = new List<double>();
+
+            var offsetX = widthIndex * width;
+            var offsetY = heightIndex * height;
+
+            for (var x = 1; x <= width; x++)
+            {
+                for (var y = 1; y <= height; y++)
+                {
+                    var color = bitmap.GetPixel(offsetX + x - 1, offsetY + y - 1);
+                    var brightness = color.Brightness();
+                    result.Add(brightness);
+                }
+            }
+
+            return result.Average();
+        }
+
+        public double[] GetNoises()
+        {
+            var result = new List<double>();
+
+            using (var bitmap = this.Bitmap)
+            {
+                var width = ((double)this.Width / 3).FloorToInt();
+                var height = ((double)this.Height / 3).FloorToInt();
+
+                for (var y = 1; y <= 3; y++)
+                {
+                    for (var x = 1; x <= 3; x++)
+                    {
+                        var noise = this.GetNoise(bitmap, x - 1, y - 1, width, height);
+                        result.Add(noise);
+                    }
+                }
+            }
+
+            var maxNoise = result.Max();
+            result = result.Select(x => x / maxNoise).ToList();
+            return result.ToArray();
         }
     }
 }
