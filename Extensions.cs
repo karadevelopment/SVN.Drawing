@@ -158,6 +158,40 @@ namespace SVN.Drawing
             return result.Normalize().ToArray();
         }
 
+        public static double[] BrightnessesHorizontal(this Bitmap param)
+        {
+            var result = new List<double>();
+            var noises = param.Brightnesses();
+
+            for (var i = 1; i <= 3; i++)
+            {
+                var brightness1 = noises[(i - 1) * 3 + 0];
+                var brightness2 = noises[(i - 1) * 3 + 1];
+                var brightness3 = noises[(i - 1) * 3 + 2];
+                var brightness = (brightness1 + brightness2 + brightness3) / 3;
+                result.Add(brightness);
+            }
+
+            return result.Normalize().ToArray();
+        }
+
+        public static double[] BrightnessesVertical(this Bitmap param)
+        {
+            var result = new List<double>();
+            var noises = param.Brightnesses();
+
+            for (var i = 1; i <= 3; i++)
+            {
+                var brightness1 = noises[i - 1 + 0];
+                var brightness2 = noises[i - 1 + 3];
+                var brightness3 = noises[i - 1 + 6];
+                var brightness = (brightness1 + brightness2 + brightness3) / 3;
+                result.Add(brightness);
+            }
+
+            return result.Normalize().ToArray();
+        }
+
         public static double Noise(this Bitmap param)
         {
             using (var bitmap = param.ConvolutionFilter())

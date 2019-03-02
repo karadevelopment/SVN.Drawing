@@ -28,6 +28,16 @@ namespace SVN.Drawing.Helpers
             get => this.Bitmap.Brightnesses();
         }
 
+        public double[] BrightnessesHorizontal
+        {
+            get => this.Bitmap.BrightnessesHorizontal();
+        }
+
+        public double[] BrightnessesVertical
+        {
+            get => this.Bitmap.BrightnessesVertical();
+        }
+
         public double Noise
         {
             get => this.Bitmap.Noise();
