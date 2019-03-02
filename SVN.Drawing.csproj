@@ -44,10 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Casting\Extensions.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Helpers\ImageData.cs" />
-    <Compile Include="Imaging\Extensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
