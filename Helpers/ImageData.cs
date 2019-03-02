@@ -90,20 +90,21 @@ namespace SVN.Drawing.Helpers
 
         public void ApplyConvolutionFilter(double factor = 1, int bias = 0, bool grayscale = true)
         {
-            var sourceBitmap = this.Bitmap;
             var filterMatrix = new double[,]
             {
                 { -1, -1, -1, },
                 { -1,  8, -1, },
                 { -1, -1, -1, },
             };
-            var rect = new Rectangle(default(int), default(int), sourceBitmap.Width, sourceBitmap.Height);
-            var sourceData = sourceBitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+
+            var bitmap = this.Bitmap;
+            var sourceRect = new Rectangle(default(int), default(int), bitmap.Width, bitmap.Height);
+            var sourceData = bitmap.LockBits(sourceRect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             var pixelBuffer = new byte[sourceData.Stride * sourceData.Height];
             var resultBuffer = new byte[sourceData.Stride * sourceData.Height];
 
             Marshal.Copy(sourceData.Scan0, pixelBuffer, default(int), pixelBuffer.Length);
-            sourceBitmap.UnlockBits(sourceData);
+            bitmap.UnlockBits(sourceData);
 
             if (grayscale)
             {
@@ -122,62 +123,58 @@ namespace SVN.Drawing.Helpers
                 }
             }
 
-            var red = default(double);
-            var green = default(double);
-            var blue = default(double);
             var filterWidth = filterMatrix.GetLength(1);
-            var filterHeight = filterMatrix.GetLength(0);
             var filterOffset = (filterWidth - 1) / 2;
-            var calcOffset = default(int);
-            var byteOffset = default(int);
 
-            for (var offsetY = filterOffset; offsetY < sourceBitmap.Height - filterOffset; offsetY++)
+            for (var offsetY = filterOffset; offsetY < bitmap.Height - filterOffset; offsetY++)
             {
-                for (var offsetX = filterOffset; offsetX < sourceBitmap.Width - filterOffset; offsetX++)
+                for (var offsetX = filterOffset; offsetX < bitmap.Width - filterOffset; offsetX++)
                 {
-                    red = default(double);
-                    green = default(double);
-                    blue = default(double);
+                    var r = default(double);
+                    var g = default(double);
+                    var b = default(double);
 
-                    byteOffset = offsetY * sourceData.Stride + offsetX * 4;
+                    var byteOffset = offsetY * sourceData.Stride + offsetX * 4;
 
-                    for (var filterY = -filterOffset; filterY <= filterOffset; filterY++)
+                    for (var y = -filterOffset; y <= filterOffset; y++)
                     {
-                        for (var filterX = -filterOffset; filterX <= filterOffset; filterX++)
+                        for (var x = -filterOffset; x <= filterOffset; x++)
                         {
-                            calcOffset = byteOffset + (filterX * 4) + (filterY * sourceData.Stride);
-                            red += pixelBuffer[calcOffset + 2] * filterMatrix[filterY + filterOffset, filterX + filterOffset];
-                            green += pixelBuffer[calcOffset + 1] * filterMatrix[filterY + filterOffset, filterX + filterOffset];
-                            blue += pixelBuffer[calcOffset] * filterMatrix[filterY + filterOffset, filterX + filterOffset];
+                            var offset = byteOffset + (x * 4) + (y * sourceData.Stride);
+                            b += pixelBuffer[offset + 0] * filterMatrix[y + filterOffset, x + filterOffset];
+                            g += pixelBuffer[offset + 1] * filterMatrix[y + filterOffset, x + filterOffset];
+                            r += pixelBuffer[offset + 2] * filterMatrix[y + filterOffset, x + filterOffset];
                         }
                     }
 
-                    red = factor * red + bias;
-                    green = factor * green + bias;
-                    blue = factor * blue + bias;
+                    r = factor * r + bias;
+                    g = factor * g + bias;
+                    b = factor * b + bias;
 
-                    red = Math.Max(red, byte.MinValue);
-                    red = Math.Min(red, byte.MaxValue);
-                    green = Math.Max(green, byte.MinValue);
-                    green = Math.Min(green, byte.MaxValue);
-                    blue = Math.Max(blue, byte.MinValue);
-                    blue = Math.Min(blue, byte.MaxValue);
+                    r = Math.Max(r, byte.MinValue);
+                    r = Math.Min(r, byte.MaxValue);
+                    g = Math.Max(g, byte.MinValue);
+                    g = Math.Min(g, byte.MaxValue);
+                    b = Math.Max(b, byte.MinValue);
+                    b = Math.Min(b, byte.MaxValue);
 
-                    resultBuffer[byteOffset + 0] = (byte)blue;
-                    resultBuffer[byteOffset + 1] = (byte)green;
-                    resultBuffer[byteOffset + 2] = (byte)red;
+                    resultBuffer[byteOffset + 0] = (byte)b;
+                    resultBuffer[byteOffset + 1] = (byte)g;
+                    resultBuffer[byteOffset + 2] = (byte)r;
                     resultBuffer[byteOffset + 3] = byte.MaxValue;
                 }
             }
 
-            var resultBitmap = new Bitmap(sourceBitmap.Width, sourceBitmap.Height);
-            rect = new Rectangle(default(int), default(int), resultBitmap.Width, resultBitmap.Height);
-            var resultData = resultBitmap.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            using (var resultBitmap = new Bitmap(bitmap.Width, bitmap.Height))
+            {
+                var resultRect = new Rectangle(default(int), default(int), resultBitmap.Width, resultBitmap.Height);
+                var resultData = resultBitmap.LockBits(resultRect, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
-            Marshal.Copy(resultBuffer, default(int), resultData.Scan0, resultBuffer.Length);
-            resultBitmap.UnlockBits(resultData);
+                Marshal.Copy(resultBuffer, default(int), resultData.Scan0, resultBuffer.Length);
+                resultBitmap.UnlockBits(resultData);
 
-            this.Apply(resultBitmap);
+                this.Apply(resultBitmap);
+            }
         }
 
         private double GetNoise(Bitmap bitmap, int widthIndex, int heightIndex, int width, int height)
