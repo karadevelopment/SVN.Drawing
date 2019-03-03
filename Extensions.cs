@@ -165,9 +165,9 @@ namespace SVN.Drawing
 
             for (var i = 1; i <= 3; i++)
             {
-                var brightness1 = noises[(i - 1) * 3 + 0];
-                var brightness2 = noises[(i - 1) * 3 + 1];
-                var brightness3 = noises[(i - 1) * 3 + 2];
+                var brightness1 = noises[i - 1 + 0];
+                var brightness2 = noises[i - 1 + 3];
+                var brightness3 = noises[i - 1 + 6];
                 var brightness = (brightness1 + brightness2 + brightness3) / 3;
                 result.Add(brightness);
             }
@@ -182,9 +182,9 @@ namespace SVN.Drawing
 
             for (var i = 1; i <= 3; i++)
             {
-                var brightness1 = noises[i - 1 + 0];
-                var brightness2 = noises[i - 1 + 3];
-                var brightness3 = noises[i - 1 + 6];
+                var brightness1 = noises[(i - 1) * 3 + 0];
+                var brightness2 = noises[(i - 1) * 3 + 1];
+                var brightness3 = noises[(i - 1) * 3 + 2];
                 var brightness = (brightness1 + brightness2 + brightness3) / 3;
                 result.Add(brightness);
             }
@@ -220,9 +220,9 @@ namespace SVN.Drawing
 
             for (var i = 1; i <= 3; i++)
             {
-                var noise1 = noises[(i - 1) * 3 + 0];
-                var noise2 = noises[(i - 1) * 3 + 1];
-                var noise3 = noises[(i - 1) * 3 + 2];
+                var noise1 = noises[i - 1 + 0];
+                var noise2 = noises[i - 1 + 3];
+                var noise3 = noises[i - 1 + 6];
                 var noise = (noise1 + noise2 + noise3) / 3;
                 result.Add(noise);
             }
@@ -237,14 +237,59 @@ namespace SVN.Drawing
 
             for (var i = 1; i <= 3; i++)
             {
-                var noise1 = noises[i - 1 + 0];
-                var noise2 = noises[i - 1 + 3];
-                var noise3 = noises[i - 1 + 6];
+                var noise1 = noises[(i - 1) * 3 + 0];
+                var noise2 = noises[(i - 1) * 3 + 1];
+                var noise3 = noises[(i - 1) * 3 + 2];
                 var noise = (noise1 + noise2 + noise3) / 3;
                 result.Add(noise);
             }
 
             return result.Normalize().ToArray();
+        }
+
+        public static void Rotate90(this Image param)
+        {
+            param.RotateFlip(RotateFlipType.Rotate90FlipNone);
+        }
+
+        public static void FlipVertical(this Image param)
+        {
+            param.RotateFlip(RotateFlipType.RotateNoneFlipY);
+        }
+
+        public static void ExifRotate(this Image param)
+        {
+            var exifOrientationId = 0x112;
+
+            if (!param.PropertyIdList.Contains(exifOrientationId))
+            {
+                return;
+            }
+
+            var prop = param.GetPropertyItem(exifOrientationId);
+            var value = BitConverter.ToUInt16(prop.Value, default(int));
+            var rotation = RotateFlipType.RotateNoneFlipNone;
+
+            if (value == 3 || value == 4)
+            {
+                rotation = RotateFlipType.Rotate180FlipNone;
+            }
+            else if (value == 5 || value == 6)
+            {
+                rotation = RotateFlipType.Rotate90FlipNone;
+            }
+            else if (value == 7 || value == 8)
+            {
+                rotation = RotateFlipType.Rotate270FlipNone;
+            }
+            if (value == 2 || value == 4 || value == 5 || value == 7)
+            {
+                rotation |= RotateFlipType.RotateNoneFlipX;
+            }
+            if (rotation != RotateFlipType.RotateNoneFlipNone)
+            {
+                param.RotateFlip(rotation);
+            }
         }
 
         public static byte[] ToBytes(this Image param)
